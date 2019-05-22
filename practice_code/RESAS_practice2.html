@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>test</title>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+</head>
+<body>
+<div>
+    <table id="prefTable" border="1">
+        <tr>
+            <th>prefCode</th>
+            <th>prefName</th>
+            <th>value</th>
+        </tr>
+    </table>
+</div>
+</body>
+<script>
+    for(i = 1; i <= 47; i++) {
+        $.ajax({
+            url: "https://opendata.resas-portal.go.jp/api/v1/agriculture/crops/workingDays?prefCode="+i,
+            type: "GET",
+            headers: {
+                'X-API-KEY': "KDeOykTOQtdMRxUjxNRbOii8DyfeeDf42FewXEmB" // ここにAPIキー文字列を記述
+            },
+            async: "false",
+        })
+            .then(
+                function (result_data) {
+                    var rows = "";
+                    rows += "<tr>";
+                    rows += "<td>";
+                    rows += result_data.result.prefCode;
+                    rows += "</td>";
+                    rows += "<td>";
+                    rows += result_data.result.label;
+                    rows += "</td>";
+                    rows += "<td>";
+                    rows += result_data.result.years[1].value;
+                    rows += "</td>";
+                    rows += "</tr>";
+                    $("#prefTable").append(rows);
+                },
+                function () {
+                }
+            );
+    }
+</script>
+</html>

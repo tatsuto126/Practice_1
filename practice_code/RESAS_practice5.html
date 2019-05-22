@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RESAS_practice5</title>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.4/Chart.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-beta.25/css/uikit.min.css" />
+</head>
+<body>
+都道府県及び市町村を選択してください。
+都道府県が未選択の場合、データの取得ができません。
+<form name="select">
+    都道府県
+    <select id="selectPref" name="pref">
+        <option value="0" selected>選択してください</option>
+    </select>
+    市町村
+    <select id="selectCity" name="city">
+        <option value="0" selected>選択してください</option>
+    </select>
+    <input type="button" value="取得する" onclick="getPref_Population_translation()">
+</form>
+<div class="uk-grid">
+    <div class="uk-width-1-4">
+        <table id="prefTable" border="1"><tbody></tbody></table>
+    </div>
+    <div class="uk-width-3-4"><canvas id="stage"></canvas></div>
+</div>
+</body>
+<script>
+    var chart;
+    $.ajax({
+        url: "https://opendata.resas-portal.go.jp/api/v1/prefectures",
+        type: "GET",
+        headers: {
+            'X-API-KEY': "KDeOykTOQtdMRxUjxNRbOii8DyfeeDf42FewXEmB" // ここにAPIキー文字列を記述
+        },
+        async: "false",
+    })
+        .then(
+            function (result_data) {
+                var selectElement = document.getElementById("selectPref");
+                for (var i = 0; i < result_data.result.length; i++) {
+                    var option = document.createElement("option");
+                    option.value = result_data.result[i].prefCode;
+                    option.innerText = result_data.result[i].prefName;
+                    selectElement.appendChild(option);
+                }
+            },
+            function () {
+            }
+        )
+    document.getElementById("selectPref").onclick = function() {
+        var pref_id = document.getElementById("selectPref");
+        var pref_code = pref_id.options[pref_id.selectedIndex].value;
+        console.log("pref_code = " + pref_code);
+        $('select#selectCity').children().remove();
+        if (pref_code == 0) {
+            var selectElement = document.getElementById("selectCity");
+            var option = document.createElement("option");
+            option.value = "0";
+            option.innerText = "選択してください";
+            selectElement.appendChild(option);
+            return;
+        }
+        $.ajax({
+            url: "https://opendata.resas-portal.go.jp/api/v1/cities?prefCode="+pref_code,
+            type: "GET",
+            headers: {
+                'X-API-KEY': "KDeOykTOQtdMRxUjxNRbOii8DyfeeDf42FewXEmB" // ここにAPIキー文字列を記述
+            },
+            async: "false",
+        })
+            .then(
+                function (result_data){
+                    var selectElement = document.getElementById("selectCity");
+                    var option = document.createElement("option");
+                    option.value = "-";
+                    option.innerText = "全体";
+                    selectElement.appendChild(option);
+                    for(var i = 0; i < result_data.result.length; i++){
+                        var option = document.createElement("option");
+                        option.value = result_data.result[i].cityCode;
+                        option.innerText = result_data.result[i].cityName;
+                        selectElement.appendChild(option);
+                    }
+                },
+                function(){
+                }
+            )
+    };
+    function getPref_Population_translation(){
+        var pref_id = document.getElementById("selectPref");
+        var pref_code = pref_id.options[pref_id.selectedIndex].value;
+        var pref_name = pref_id.options[pref_id.selectedIndex].text;
+        var city_id = document.getElementById("selectCity");
+        var city_code = city_id.options[city_id.selectedIndex].value;
+        var city_name = city_id.options[city_id.selectedIndex].text;
+        if(pref_code == 0){
+            alert("都道府県を選択してください");
+            return;
+        }
+        console.log("pref_code = " + pref_code);
+        console.log("pref_name = " + pref_name);
+        console.log("city_code = " + city_code);
+        console.log("city_name = " + city_name);
+        $.ajax({
+            url: "https://opendata.resas-portal.go.jp/api/v1/population/sum/estimate?prefCode="+pref_code+"&cityCode="+city_code,
+            type: "GET",
+            headers: {
+                'X-API-KEY': "KDeOykTOQtdMRxUjxNRbOii8DyfeeDf42FewXEmB" // ここにAPIキー文字列を記述
+            },
+            async: "false",
+        })
+            .then(
+                function (result_data) {
+                    var labels = [];
+                    var data = [];
+                    var rows = "<tr><th>年</th><th>総人口</th></tr>";
+
+                    for(i = 0; i < result_data.result.data[0].data.length; i++){
+                        labels.push(result_data.result.data[0].data[i].year);
+                        data.push(result_data.result.data[0].data[i].value);
+                        rows += "<tr>";
+                        rows += "<td>";
+                        rows += result_data.result.data[0].data[i].year;
+                        rows += "</td>";
+                        rows += "<td>";
+                        rows += result_data.result.data[0].data[i].value;
+                        rows += "</td>";
+                        rows += "</tr>";
+                    }
+                    $('table#prefTable tbody *').remove();
+                    $("#prefTable").append(rows);
+                    var mydata = {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: '総人口',
+                                hoverBackgroundColor: "rgba(255,99,132,0.3)",
+                                data: data,
+                            }
+                        ]
+                    };
+                    var options = {
+                        title: {
+                            display: true,
+                            text: pref_name + city_name + 'の総人口推移'
+                        }
+                    };
+                    var canvas = document.getElementById('stage');
+                    if(chart)
+                        chart.destroy();
+                    chart = new Chart(canvas, {
+                        type: 'bar',  //グラフの種類
+                        data: mydata,  //表示するデータ
+                        options: options  //オプション設定
+
+                    });
+                },
+                function () {}
+            );
+    };
+</script>
+</html>

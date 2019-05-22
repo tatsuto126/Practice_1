@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RESAS_practice</title>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <style type="text/css">
+        body{
+            background: #ffffff;
+        }
+        div {
+            background: #b3d4fc;
+            width: 800px;
+            margin: 0px auto;
+            border: 1px solid #222222;
+        }
+        #prefTable{
+            background :#000000;
+            color: #ffffff;
+            text-align: center;
+            margin: 0px auto;
+        }
+    </style>
+</head>
+<body>
+<div>
+<table id="prefTable" border="1">
+    <tr>
+        <th>prefCode</th>
+        <th>prefName</th>
+        <th>cityName</th>
+    </tr>
+    <tbody>
+    </tbody>
+</table>
+</div>
+</body>
+<script>
+    $.ajax({
+        url: "https://opendata.resas-portal.go.jp/api/v1/prefectures",
+        type: "GET",
+        headers: {
+            'X-API-KEY': "KDeOykTOQtdMRxUjxNRbOii8DyfeeDf42FewXEmB" // ここにAPIキー文字列を記述
+        },
+        async: "false",
+    })
+    .then(
+        function(result_data){
+            var rows = "";
+            for(i = 0; i < result_data.result.length; i++){
+                rows += "<tr>";
+                rows += "<td>";
+                rows += result_data.result[i].prefCode;
+                rows += "</td>";
+                rows += "<td>";
+                rows += result_data.result[i].prefName;
+                rows += "</td>";
+                rows += "</tr>";
+            }
+            $("#prefTable").append(rows);
+        },
+        function(){}
+        );
+</script>
+</html>
